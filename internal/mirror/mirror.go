@@ -280,6 +280,9 @@ func PlatformLabels(ctx context.Context, run Runner, repo, platformDigest string
 const (
 	versionLabel  = "org.opencontainers.image.version"
 	revisionLabel = "org.opencontainers.image.revision"
+	// Greenbone's per-build feed version — the only label that changes when
+	// a feed image rebuilds under an unchanged git revision.
+	feedVersionLabel = "net.greenbone.feed.version"
 )
 
 // ResolveVersionRevision requires org.opencontainers.image.version and
@@ -307,6 +310,21 @@ func ResolveVersionRevision(labelsByPlatform map[string]map[string]string) (vers
 		return "", "", err
 	}
 	return version, revision, nil
+}
+
+// ResolveFeedVersion returns the agreed net.greenbone.feed.version across
+// all platforms, failing closed like ResolveVersionRevision — callers only
+// ask for it on images configured to carry it.
+func ResolveFeedVersion(labelsByPlatform map[string]map[string]string) (string, error) {
+	if len(labelsByPlatform) == 0 {
+		return "", errors.New("mirror: no platforms to resolve labels from")
+	}
+	platforms := make([]string, 0, len(labelsByPlatform))
+	for p := range labelsByPlatform {
+		platforms = append(platforms, p)
+	}
+	sort.Strings(platforms)
+	return agreeingLabel(labelsByPlatform, platforms, feedVersionLabel)
 }
 
 func agreeingLabel(labelsByPlatform map[string]map[string]string, platforms []string, label string) (string, error) {
@@ -344,15 +362,19 @@ func FallbackTag(digestRef string) string {
 	return "sha256-" + hexDigest
 }
 
-// DestinationRepository maps a source repository to its mirror destination
-// under prefix, using the source repository's last path segment as the
-// mirror's image name.
-func DestinationRepository(prefix, sourceRepository string) string {
-	name := sourceRepository
+// ImageName returns sourceRepository's last path segment — the name an
+// image is mirrored under and configured by.
+func ImageName(sourceRepository string) string {
 	if i := strings.LastIndexByte(sourceRepository, '/'); i >= 0 {
-		name = sourceRepository[i+1:]
+		return sourceRepository[i+1:]
 	}
-	return strings.TrimRight(prefix, "/") + "/" + name
+	return sourceRepository
+}
+
+// DestinationRepository maps a source repository to its mirror destination
+// under prefix, using ImageName as the mirror's image name.
+func DestinationRepository(prefix, sourceRepository string) string {
+	return strings.TrimRight(prefix, "/") + "/" + ImageName(sourceRepository)
 }
 
 // PlanDestinations computes DestinationRepository for every image and fails
@@ -462,6 +484,7 @@ type LockEntry struct {
 	DestinationDigest     string    `json:"destination_digest"`
 	Version               string    `json:"version,omitempty"`
 	Revision              string    `json:"revision,omitempty"`
+	FeedVersion           string    `json:"feed_version,omitempty"`
 	Tags                  []string  `json:"tags"`
 	Platforms             []string  `json:"platforms"`
 	CapturedAt            time.Time `json:"captured_at"`
