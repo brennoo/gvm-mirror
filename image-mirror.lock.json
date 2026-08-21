@@ -17,7 +17,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:58:16.408485345Z"
+      "captured_at": "2026-08-21T23:15:15.685101979Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/data-objects",
@@ -38,7 +38,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:58:25.775703648Z"
+      "captured_at": "2026-08-21T23:15:20.807554308Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/dfn-cert-data",
@@ -53,7 +53,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:58:41.644149529Z"
+      "captured_at": "2026-08-21T23:15:26.075936318Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/gpg-data",
@@ -72,7 +72,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:58:49.993042517Z"
+      "captured_at": "2026-08-21T23:15:30.935653442Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/gsa",
@@ -91,7 +91,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:58:59.118683357Z"
+      "captured_at": "2026-08-21T23:15:36.162636725Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/gvm-tools",
@@ -110,7 +110,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:59:08.057171808Z"
+      "captured_at": "2026-08-21T23:15:41.456017198Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/gvmd",
@@ -129,7 +129,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:59:17.099298999Z"
+      "captured_at": "2026-08-21T23:15:46.548923922Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/notus-data",
@@ -148,7 +148,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:59:26.11624084Z"
+      "captured_at": "2026-08-21T23:15:51.648908156Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/openvas-scanner",
@@ -167,7 +167,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:59:35.179359521Z"
+      "captured_at": "2026-08-21T23:15:56.68613327Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/ospd-openvas",
@@ -182,7 +182,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:59:44.221715339Z"
+      "captured_at": "2026-08-21T23:16:01.733617626Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/pg-gvm",
@@ -201,7 +201,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T22:59:52.539158589Z"
+      "captured_at": "2026-08-21T23:16:06.46205104Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/redis-server",
@@ -220,7 +220,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T23:00:01.647984817Z"
+      "captured_at": "2026-08-21T23:16:11.522997236Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/report-formats",
@@ -239,7 +239,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T23:00:27.665067636Z"
+      "captured_at": "2026-08-21T23:16:16.613670525Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/scap-data",
@@ -258,7 +258,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T23:00:41.271066912Z"
+      "captured_at": "2026-08-21T23:16:22.066545911Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/vulnerability-tests",
@@ -277,7 +277,7 @@
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-21T23:00:51.777650447Z"
+      "captured_at": "2026-08-21T23:16:27.07450738Z"
     }
   ]
 }
