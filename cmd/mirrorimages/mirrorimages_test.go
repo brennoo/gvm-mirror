@@ -715,6 +715,59 @@ func TestRunPolicyNameNotInLockFailsClosed(t *testing.T) {
 	}
 }
 
+func TestRunNoOpKeepsLockFileByteIdentical(t *testing.T) {
+	dir := t.TempDir()
+	srcHex := digestHex([]byte(gvmdManifest))
+	fallbackTag := "sha256-" + srcHex
+	dstFallbackRef := "ghcr.io/brennoo/gvm-mirror/gvmd:" + fallbackTag
+	dstDigestRef := "ghcr.io/brennoo/gvm-mirror/gvmd@sha256:" + srcHex
+
+	// The seed matches this run's outcome exactly, except captured_at.
+	lockPath := writeSeedLock(t, dir, mirror.LockEntry{
+		SourceRepository:      "gvmd",
+		SourceChannel:         "gvmd:stable",
+		SourceDigest:          "gvmd@sha256:" + srcHex,
+		DestinationRepository: "ghcr.io/brennoo/gvm-mirror/gvmd",
+		DestinationDigest:     dstDigestRef,
+		Version:               "23.0.0",
+		Revision:              "abc123",
+		Tags:                  []string{fallbackTag, "23.0.0", "abc123"},
+		Platforms:             []string{"linux/amd64"},
+		CapturedAt:            time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC),
+	})
+	lockBefore, err := os.ReadFile(lockPath)
+	if err != nil {
+		t.Fatalf("reading seed lock: %v", err)
+	}
+
+	runner := fakeRunner(t, map[string]func() ([]byte, error){
+		"skopeo inspect --raw docker://gvmd:stable":                            ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://gvmd@sha256:" + srcHex:                  ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://gvmd@sha256:" + srcHex:                        ok([]byte(gvmdInspect)),
+		"skopeo inspect --raw docker://" + dstFallbackRef:                      ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://" + dstDigestRef:                        ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://" + dstDigestRef:                              ok([]byte(gvmdInspect)),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:23.0.0": ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123": ok([]byte(gvmdManifest)),
+	})
+
+	var stdout, stderr bytes.Buffer
+	err = run(context.Background(), []string{
+		"-lock-file", lockPath,
+	}, runner, fixedNow, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("run: %v (stderr: %s)", err, stderr.String())
+	}
+
+	lockAfter, err := os.ReadFile(lockPath)
+	if err != nil {
+		t.Fatalf("reading lock after run: %v", err)
+	}
+	if string(lockAfter) != string(lockBefore) {
+		t.Errorf("a no-op run must leave the lock file byte-identical, got diff:\nbefore: %s\nafter: %s", lockBefore, lockAfter)
+	}
+}
+
 func TestRunUnexpectedArgument(t *testing.T) {
 	err := run(context.Background(), []string{"bogus"}, fakeRunner(t, nil), fixedNow, &bytes.Buffer{}, &bytes.Buffer{})
 	if err == nil {

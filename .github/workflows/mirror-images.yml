@@ -109,4 +109,4 @@ jobs:
         run: |
           sleep 15
           gh pr checks "mirror/lock-update" --watch --fail-fast
-          gh pr merge "mirror/lock-update" --merge --delete-branch
+          gh pr merge "mirror/lock-update" --squash
