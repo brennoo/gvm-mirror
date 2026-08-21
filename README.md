@@ -76,9 +76,9 @@ upstream provenance anomaly, not something to paper over.
 
 `image-mirror.lock.json` records, for every image: the upstream channel it was resolved from, the
 source and destination digests, resolved version/revision, tags, and platforms. It is both the
-audit trail and the seed the next run reads to know what to mirror. Changes to it land via
-reviewed PRs, never direct pushes — `.github/workflows/mirror-images.yml` runs weekly and opens
-an auto-approved PR when the lock drifts.
+audit trail and the seed the next run reads to know what to mirror. Changes to it land via PRs,
+never direct pushes — `.github/workflows/mirror-images.yml` runs weekly and, when the lock
+drifts, opens a PR that is auto-approved and merged once CI passes.
 
 ## Running it
 

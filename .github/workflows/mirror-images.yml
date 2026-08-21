@@ -68,7 +68,8 @@ jobs:
           fi
 
       # A PAT creates the PR (GITHUB_TOKEN would suppress CI and can't
-      # approve its own PR below). This job never pushes to main.
+      # approve its own PR below). Main only changes via the merge below,
+      # after CI passes on the PR.
       - name: Open PR with lock file update
         if: steps.drift.outputs.changed == 'true'
         env:
@@ -97,3 +98,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr review "mirror/lock-update" --approve --body "Auto-approved lock file sync from the scheduled mirror run."
+
+      # Merge with the PAT so GITHUB_TOKEN keeps contents: read and the
+      # merge push still triggers CI on main. A failed check leaves the PR
+      # open for a human instead.
+      - name: Merge PR
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MIRROR_PR_TOKEN }}
+        run: |
+          sleep 15
+          gh pr checks "mirror/lock-update" --watch --fail-fast
+          gh pr merge "mirror/lock-update" --merge --delete-branch
