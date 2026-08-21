@@ -8,8 +8,8 @@
 # Requires `skopeo` on PATH and a registry session already authenticated for
 # push (e.g. `skopeo login ghcr.io` or `docker login ghcr.io`).
 #
-# This is the only sanctioned way the lock file moves: nothing commits its
-# changes automatically. Run it, review the diff, and commit deliberately.
+# This is the only sanctioned way the lock file moves: nothing pushes to
+# main automatically. CI opens an auto-approved PR on drift; a human merges.
 #
 # Usage: ./mirror-images.sh [flags]
 set -eu

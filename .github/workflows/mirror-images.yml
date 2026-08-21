@@ -12,10 +12,11 @@ on:
 permissions:
   contents: read
   packages: write
+  pull-requests: write
 
-# This job holds packages: write, unlike this repo's other workflows — every
-# action reference here is pinned to a commit SHA (not just third-party
-# ones) so that elevated permission can't be exercised by a moved tag.
+# This job holds elevated permissions, unlike this repo's other workflows —
+# every action reference here is pinned to a commit SHA so they can't be
+# exercised by a moved tag.
 
 jobs:
   mirror:
@@ -51,14 +52,48 @@ jobs:
           name: image-mirror-lock
           path: image-mirror.lock.json
 
-      # Purely informational: this job never commits. A human reviews the
-      # diff above and opens a PR if the lock changed.
-      - name: Report lock file drift
-        if: always()
+      - name: Detect lock file drift
+        id: drift
         run: |
-          {
-            echo '## Lock file drift'
-            echo '```diff'
-            git diff -- image-mirror.lock.json
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          if git diff --quiet -- image-mirror.lock.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo '## Lock file drift'
+              echo '```diff'
+              git diff -- image-mirror.lock.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # A PAT creates the PR (GITHUB_TOKEN would suppress CI and can't
+      # approve its own PR below). This job never pushes to main.
+      - name: Open PR with lock file update
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MIRROR_PR_TOKEN }}
+          BRANCH: mirror/lock-update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add image-mirror.lock.json
+          git commit -m "Sync lock file from the $(date -u +%F) mirror run"
+          git push --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" \
+            "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            gh pr create \
+              --head "$BRANCH" \
+              --title "Sync lock file from the $(date -u +%F) mirror run" \
+              --body "Automated lock file update from the scheduled mirror run. See the run's job summary for the diff."
+          fi
+
+      # Re-approve every run: the force-push above dismisses stale reviews.
+      - name: Approve PR
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review "mirror/lock-update" --approve --body "Auto-approved lock file sync from the scheduled mirror run."
