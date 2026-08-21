@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -137,23 +138,7 @@ func runWithFlags(ctx context.Context, composeFile, lockFile, destPrefix string,
 		byRepo[e.SourceRepository] = e
 	}
 
-	var succeeded []mirror.LockEntry
-	var failed []string
-	var total tagCounts
-	for _, img := range images {
-		entry, counts, err := mirrorOne(ctx, runner, img, destinations[img.Repository], movable, policies, dryRun, now, stderr)
-		if err != nil {
-			_, _ = fmt.Fprintf(stderr, "mirrorimages: %s: %v\n", img.Repository, err)
-			failed = append(failed, img.Repository)
-			continue
-		}
-		byRepo[img.Repository] = entry
-		succeeded = append(succeeded, entry)
-		if !dryRun && counts != (tagCounts{}) {
-			_, _ = fmt.Fprintf(stderr, "mirrorimages: %s: %s\n", img.Repository, counts)
-			total.add(counts)
-		}
-	}
+	succeeded, failed, total := mirrorAll(ctx, runner, images, destinations, byRepo, movable, policies, dryRun, now, stderr)
 	sort.Slice(succeeded, func(i, j int) bool { return succeeded[i].SourceRepository < succeeded[j].SourceRepository })
 
 	if dryRun {
@@ -168,6 +153,36 @@ func runWithFlags(ctx context.Context, composeFile, lockFile, destPrefix string,
 		return fmt.Errorf("failed to mirror %d image(s): %s", len(failed), strings.Join(failed, ", "))
 	}
 	return nil
+}
+
+// mirrorAll mirrors every image, updating byRepo in place with each success.
+func mirrorAll(ctx context.Context, runner mirror.Runner, images []mirror.SourceImage, destinations map[string]string, byRepo map[string]mirror.LockEntry, movable map[string]bool, policies tagPolicies, dryRun bool, now func() time.Time, stderr io.Writer) (succeeded []mirror.LockEntry, failed []string, total tagCounts) {
+	for _, img := range images {
+		entry, counts, err := mirrorOne(ctx, runner, img, destinations[img.Repository], movable, policies, dryRun, now, stderr)
+		if err != nil {
+			_, _ = fmt.Fprintf(stderr, "mirrorimages: %s: %v\n", img.Repository, err)
+			failed = append(failed, img.Repository)
+			continue
+		}
+		// Keep the seed's captured_at when nothing else changed, so a no-op
+		// run leaves the lock file byte-identical and opens no PR.
+		if seed, ok := byRepo[img.Repository]; ok && sameExceptCapturedAt(entry, seed) {
+			entry.CapturedAt = seed.CapturedAt
+		}
+		byRepo[img.Repository] = entry
+		succeeded = append(succeeded, entry)
+		if !dryRun && counts != (tagCounts{}) {
+			_, _ = fmt.Fprintf(stderr, "mirrorimages: %s: %s\n", img.Repository, counts)
+			total.add(counts)
+		}
+	}
+	return succeeded, failed, total
+}
+
+func sameExceptCapturedAt(a, b mirror.LockEntry) bool {
+	a.CapturedAt = time.Time{}
+	b.CapturedAt = time.Time{}
+	return reflect.DeepEqual(a, b)
 }
 
 func rewritableEntries(entries []mirror.LockEntry) []mirror.LockEntry {
