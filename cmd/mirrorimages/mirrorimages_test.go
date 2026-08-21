@@ -60,6 +60,8 @@ func fixedNow() time.Time { return time.Date(2026, 8, 17, 0, 0, 0, 0, time.UTC) 
 const gvmdManifest = `{"mediaType":"single"}`
 const gvmdInspect = `{"Os":"linux","Architecture":"amd64","Labels":{"org.opencontainers.image.version":"23.0.0","org.opencontainers.image.revision":"abc123"}}`
 const gvmdInspectNoLabels = `{"Os":"linux","Architecture":"amd64","Labels":{}}`
+const gvmdInspectNightly = `{"Os":"linux","Architecture":"amd64","Labels":{"org.opencontainers.image.version":"nightly","org.opencontainers.image.revision":"abc123"}}`
+const gvmdInspectFeed = `{"Os":"linux","Architecture":"amd64","Labels":{"org.opencontainers.image.version":"nightly","org.opencontainers.image.revision":"abc123","net.greenbone.feed.version":"202608210512-enterprise"}}`
 
 func writeCompose(t *testing.T, dir, contents string) string {
 	t.Helper()
@@ -545,6 +547,171 @@ func TestRunMissingVersionLabelFallsBackToDigestTagOnly(t *testing.T) {
 	}
 	if lock.Entries[0].Version != "" || lock.Entries[0].Revision != "" {
 		t.Errorf("Version/Revision = %q/%q, want both empty", lock.Entries[0].Version, lock.Entries[0].Revision)
+	}
+}
+
+func TestRunAllowMoveRevisionMovesRebuiltRevisionTag(t *testing.T) {
+	dir := t.TempDir()
+	lockPath := writeSeedLock(t, dir, mirror.LockEntry{SourceRepository: "gvmd", SourceChannel: "gvmd:stable"})
+
+	srcHex := digestHex([]byte(gvmdManifest))
+	fallbackTag := "sha256-" + srcHex
+	dstFallbackRef := "ghcr.io/brennoo/gvm-mirror/gvmd:" + fallbackTag
+	dstDigestRef := "ghcr.io/brennoo/gvm-mirror/gvmd@sha256:" + srcHex
+
+	// nightly and abc123 exist pointing at an older build's digest; both must
+	// move — nightly via -allow-move, abc123 via -allow-move-revision.
+	oldManifest := `{"mediaType":"previous-build"}`
+	runner := fakeRunner(t, map[string]func() ([]byte, error){
+		"skopeo inspect --raw docker://gvmd:stable":                                                                           ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://gvmd@sha256:" + srcHex:                                                                 ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://gvmd@sha256:" + srcHex:                                                                       ok([]byte(gvmdInspectNightly)),
+		"skopeo inspect --raw docker://" + dstFallbackRef:                                                                     ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://" + dstDigestRef:                                                                       ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://" + dstDigestRef:                                                                             ok([]byte(gvmdInspectNightly)),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:nightly":                                               ok([]byte(oldManifest)),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:nightly": ok(nil),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123":                                                ok([]byte(oldManifest)),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123":  ok(nil),
+	})
+
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{
+		"-lock-file", lockPath,
+		"-allow-move", "nightly",
+		"-allow-move-revision", "gvmd",
+	}, runner, fixedNow, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("run: %v (stderr: %s)", err, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "created 0 tag(s), moved 2, unchanged 1") {
+		t.Errorf("stderr = %q, want both the nightly and revision tags moved", stderr.String())
+	}
+}
+
+func TestRunRevisionTagConflictWithoutAllowMoveRevisionFailsClosed(t *testing.T) {
+	dir := t.TempDir()
+	lockPath := writeSeedLock(t, dir, mirror.LockEntry{SourceRepository: "gvmd", SourceChannel: "gvmd:stable"})
+
+	srcHex := digestHex([]byte(gvmdManifest))
+	fallbackTag := "sha256-" + srcHex
+	dstFallbackRef := "ghcr.io/brennoo/gvm-mirror/gvmd:" + fallbackTag
+	dstDigestRef := "ghcr.io/brennoo/gvm-mirror/gvmd@sha256:" + srcHex
+
+	oldManifest := `{"mediaType":"previous-build"}`
+	runner := fakeRunner(t, map[string]func() ([]byte, error){
+		"skopeo inspect --raw docker://gvmd:stable":                                                                           ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://gvmd@sha256:" + srcHex:                                                                 ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://gvmd@sha256:" + srcHex:                                                                       ok([]byte(gvmdInspectNightly)),
+		"skopeo inspect --raw docker://" + dstFallbackRef:                                                                     ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://" + dstDigestRef:                                                                       ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://" + dstDigestRef:                                                                             ok([]byte(gvmdInspectNightly)),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:nightly":                                               ok([]byte(oldManifest)),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:nightly": ok(nil),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123":                                                ok([]byte(oldManifest)),
+	})
+
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{
+		"-lock-file", lockPath,
+		"-allow-move", "nightly",
+	}, runner, fixedNow, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected an error for a moved revision tag without -allow-move-revision, got nil")
+	}
+	if !strings.Contains(stderr.String(), "refusing to move") {
+		t.Errorf("stderr = %q, want the write-once refusal", stderr.String())
+	}
+}
+
+func TestRunFeedVersionTagAddsTagAndLockField(t *testing.T) {
+	dir := t.TempDir()
+	lockPath := writeSeedLock(t, dir, mirror.LockEntry{SourceRepository: "gvmd", SourceChannel: "gvmd:stable"})
+
+	srcHex := digestHex([]byte(gvmdManifest))
+	fallbackTag := "sha256-" + srcHex
+	dstFallbackRef := "ghcr.io/brennoo/gvm-mirror/gvmd:" + fallbackTag
+	dstDigestRef := "ghcr.io/brennoo/gvm-mirror/gvmd@sha256:" + srcHex
+	feedTag := "202608210512-enterprise"
+
+	runner := fakeRunner(t, map[string]func() ([]byte, error){
+		"skopeo inspect --raw docker://gvmd:stable":                                                                              ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://gvmd@sha256:" + srcHex:                                                                    ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://gvmd@sha256:" + srcHex:                                                                          ok([]byte(gvmdInspectFeed)),
+		"skopeo inspect --raw docker://" + dstFallbackRef:                                                                        sequence(t, fail(errors.New("manifest unknown")), ok([]byte(gvmdManifest))),
+		"skopeo inspect --raw docker://" + dstDigestRef:                                                                          ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://" + dstDigestRef:                                                                                ok([]byte(gvmdInspectFeed)),
+		"skopeo copy --all --preserve-digests docker://gvmd@sha256:" + srcHex + " docker://" + dstFallbackRef:                    ok(nil),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:nightly":                                                  fail(errors.New("manifest unknown")),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:nightly":    ok(nil),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123":                                                   fail(errors.New("manifest unknown")),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123":     ok(nil),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:" + feedTag:                                               fail(errors.New("manifest unknown")),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:" + feedTag: ok(nil),
+	})
+
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{
+		"-lock-file", lockPath,
+		"-allow-move", "nightly",
+		"-feed-version-tag", "gvmd",
+	}, runner, fixedNow, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("run: %v (stderr: %s)", err, stderr.String())
+	}
+
+	lock := readLock(t, lockPath)
+	if len(lock.Entries) != 1 {
+		t.Fatalf("lock.Entries = %+v, want 1 entry", lock.Entries)
+	}
+	entry := lock.Entries[0]
+	if entry.FeedVersion != feedTag {
+		t.Errorf("FeedVersion = %q, want %q", entry.FeedVersion, feedTag)
+	}
+	wantTags := []string{fallbackTag, "nightly", "abc123", feedTag}
+	if strings.Join(entry.Tags, ",") != strings.Join(wantTags, ",") {
+		t.Errorf("entry.Tags = %v, want %v", entry.Tags, wantTags)
+	}
+}
+
+func TestRunFeedVersionTagMissingLabelFailsClosed(t *testing.T) {
+	dir := t.TempDir()
+	lockPath := writeSeedLock(t, dir, mirror.LockEntry{SourceRepository: "gvmd", SourceChannel: "gvmd:stable"})
+
+	srcHex := digestHex([]byte(gvmdManifest))
+	runner := fakeRunner(t, map[string]func() ([]byte, error){
+		"skopeo inspect --raw docker://gvmd:stable":           ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://gvmd@sha256:" + srcHex: ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://gvmd@sha256:" + srcHex:       ok([]byte(gvmdInspect)),
+	})
+
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{
+		"-lock-file", lockPath,
+		"-feed-version-tag", "gvmd",
+	}, runner, fixedNow, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected an error when the feed version label is missing, got nil")
+	}
+	if !strings.Contains(stderr.String(), "net.greenbone.feed.version") {
+		t.Errorf("stderr = %q, want it to name the missing label", stderr.String())
+	}
+}
+
+func TestRunPolicyNameNotInLockFailsClosed(t *testing.T) {
+	dir := t.TempDir()
+	lockPath := writeSeedLock(t, dir, mirror.LockEntry{SourceRepository: "gvmd", SourceChannel: "gvmd:stable"})
+
+	// An empty response map: any registry call fails the test.
+	runner := fakeRunner(t, map[string]func() ([]byte, error){})
+
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{
+		"-lock-file", lockPath,
+		"-allow-move-revision", "data-objcets",
+	}, runner, fixedNow, &stdout, &stderr)
+	if err == nil || !strings.Contains(err.Error(), "not in the lock file") {
+		t.Fatalf("err = %v, want a rejection of the unknown image name", err)
 	}
 }
 

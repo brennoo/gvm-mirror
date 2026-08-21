@@ -265,6 +265,52 @@ func TestResolveVersionRevisionMismatchFailsClosed(t *testing.T) {
 	}
 }
 
+func TestResolveFeedVersionAgreement(t *testing.T) {
+	labels := map[string]map[string]string{
+		"linux/amd64": {feedVersionLabel: "202608210512-enterprise"},
+		"linux/arm64": {feedVersionLabel: "202608210512-enterprise"},
+	}
+	feedVersion, err := ResolveFeedVersion(labels)
+	if err != nil {
+		t.Fatalf("ResolveFeedVersion: %v", err)
+	}
+	if feedVersion != "202608210512-enterprise" {
+		t.Errorf("feedVersion = %q, want 202608210512-enterprise", feedVersion)
+	}
+}
+
+func TestResolveFeedVersionMissingFailsClosed(t *testing.T) {
+	labels := map[string]map[string]string{
+		"linux/amd64": {feedVersionLabel: "202608210512-enterprise"},
+		"linux/arm64": {},
+	}
+	if _, err := ResolveFeedVersion(labels); err == nil {
+		t.Fatal("expected an error for a missing feed version label, got nil")
+	}
+}
+
+func TestResolveFeedVersionMismatchFailsClosed(t *testing.T) {
+	labels := map[string]map[string]string{
+		"linux/amd64": {feedVersionLabel: "202608210512-enterprise"},
+		"linux/arm64": {feedVersionLabel: "202608210511-enterprise"},
+	}
+	if _, err := ResolveFeedVersion(labels); err == nil {
+		t.Fatal("expected an error for disagreeing feed version labels, got nil")
+	}
+}
+
+func TestImageName(t *testing.T) {
+	tests := []struct{ source, want string }{
+		{"registry.community.greenbone.net/community/gvmd", "gvmd"},
+		{"gvm-tools", "gvm-tools"},
+	}
+	for _, tt := range tests {
+		if got := ImageName(tt.source); got != tt.want {
+			t.Errorf("ImageName(%q) = %q, want %q", tt.source, got, tt.want)
+		}
+	}
+}
+
 func TestFallbackTag(t *testing.T) {
 	if got, want := FallbackTag("gvmd@sha256:aaaa"), "sha256-aaaa"; got != want {
 		t.Errorf("FallbackTag = %q, want %q", got, want)
