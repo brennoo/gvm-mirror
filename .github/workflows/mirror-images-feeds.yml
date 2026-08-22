@@ -1,18 +1,31 @@
-name: Mirror images
+name: Mirror feed images
 
+# The feed content images (NVT/SCAP/CERT/Notus data, scan configs, report
+# formats) rebuild upstream far more often than the software images do — a
+# weekly cadence is too coarse for them. This workflow only touches that
+# subset; mirror-images-software.yml covers the rest on a weekly cadence.
+#
 # GitHub disables `schedule:` triggers after 60 days of no repository
 # activity — a quiet period silently stops this job and nothing notifies
 # anyone. workflow_dispatch is here so the mirror can always be refreshed by
 # hand regardless of whether the schedule is currently alive.
 on:
   schedule:
-    - cron: '17 4 * * 1'
+    - cron: '23 */6 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
   pull-requests: write
+
+# Shared with mirror-images-software.yml on purpose: both workflows write the
+# same image-mirror.lock.json, so this group is keyed on the lock file, not
+# on this workflow's own name — a run of one queues behind a run of the
+# other instead of racing it for the lock file and the shared PR branch.
+concurrency:
+  group: mirror-images-lock-file
+  cancel-in-progress: false
 
 # This job holds elevated permissions, unlike this repo's other workflows —
 # every action reference here is pinned to a commit SHA so they can't be
@@ -44,7 +57,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Mirror images
-        run: ./mirror-images.sh
+        run: >
+          ./mirror-images.sh
+          -only cert-bund-data,data-objects,dfn-cert-data,notus-data,report-formats,scap-data,vulnerability-tests
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
@@ -74,21 +89,21 @@ jobs:
         if: steps.drift.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.MIRROR_PR_TOKEN }}
-          BRANCH: mirror/lock-update
+          BRANCH: mirror/lock-update-feeds
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
           git add image-mirror.lock.json
-          git commit -m "Sync lock file from the $(date -u +%F) mirror run"
+          git commit -m "Sync lock file from the $(date -u +%F) feed mirror run"
           git push --force \
             "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" \
             "$BRANCH"
           if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
             gh pr create \
               --head "$BRANCH" \
-              --title "Sync lock file from the $(date -u +%F) mirror run" \
-              --body "Automated lock file update from the scheduled mirror run. See the run's job summary for the diff."
+              --title "Sync lock file from the $(date -u +%F) feed mirror run" \
+              --body "Automated lock file update from the scheduled feed mirror run. See the run's job summary for the diff."
           fi
 
       # Re-approve every run: the force-push above dismisses stale reviews.
@@ -97,7 +112,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr review "mirror/lock-update" --approve --body "Auto-approved lock file sync from the scheduled mirror run."
+          gh pr review "mirror/lock-update-feeds" --approve --body "Auto-approved lock file sync from the scheduled feed mirror run."
 
       # Merge with the PAT so GITHUB_TOKEN keeps contents: read and the
       # merge push still triggers CI on main. A failed check leaves the PR
@@ -108,5 +123,5 @@ jobs:
           GH_TOKEN: ${{ secrets.MIRROR_PR_TOKEN }}
         run: |
           sleep 15
-          gh pr checks "mirror/lock-update" --watch --fail-fast
-          gh pr merge "mirror/lock-update" --squash
+          gh pr checks "mirror/lock-update-feeds" --watch --fail-fast
+          gh pr merge "mirror/lock-update-feeds" --squash

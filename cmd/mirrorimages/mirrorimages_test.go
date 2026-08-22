@@ -715,6 +715,95 @@ func TestRunPolicyNameNotInLockFailsClosed(t *testing.T) {
 	}
 }
 
+func TestRunOnlyNameNotInLockFailsClosed(t *testing.T) {
+	dir := t.TempDir()
+	lockPath := writeSeedLock(t, dir, mirror.LockEntry{SourceRepository: "gvmd", SourceChannel: "gvmd:stable"})
+
+	// An empty response map: any registry call fails the test.
+	runner := fakeRunner(t, map[string]func() ([]byte, error){})
+
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{
+		"-lock-file", lockPath,
+		"-only", "gvmdd",
+	}, runner, fixedNow, &stdout, &stderr)
+	if err == nil || !strings.Contains(err.Error(), "not in the lock file") {
+		t.Fatalf("err = %v, want a rejection of the unknown image name", err)
+	}
+}
+
+// TestRunOnlyMirrorsSelectedImageAndLeavesOthersUntouched is the test that
+// -only exists for: two schedules of differing cadence sharing one lock
+// file, each refreshing only its own images. "other" gets no fakeRunner
+// response at all, so the test fails outright if -only doesn't actually
+// skip resolving it.
+func TestRunOnlyMirrorsSelectedImageAndLeavesOthersUntouched(t *testing.T) {
+	dir := t.TempDir()
+	compose := writeCompose(t, dir, strings.Join([]string{
+		"    image: gvmd:stable",
+		"    image: other:latest",
+	}, "\n"))
+	lockPath := writeSeedLock(t, dir,
+		mirror.LockEntry{SourceRepository: "gvmd", SourceChannel: "gvmd:stable"},
+		mirror.LockEntry{SourceRepository: "other", SourceChannel: "other:latest"},
+	)
+
+	srcHex := digestHex([]byte(gvmdManifest))
+	fallbackTag := "sha256-" + srcHex
+	dstFallbackRef := "ghcr.io/brennoo/gvm-mirror/gvmd:" + fallbackTag
+	dstDigestRef := "ghcr.io/brennoo/gvm-mirror/gvmd@sha256:" + srcHex
+
+	runner := fakeRunner(t, map[string]func() ([]byte, error){
+		"skopeo inspect --raw docker://gvmd:stable":                                                                          ok([]byte(gvmdManifest)),
+		"skopeo inspect --raw docker://gvmd@sha256:" + srcHex:                                                                ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://gvmd@sha256:" + srcHex:                                                                      ok([]byte(gvmdInspect)),
+		"skopeo inspect --raw docker://" + dstFallbackRef:                                                                    sequence(t, fail(errors.New("manifest unknown")), ok([]byte(gvmdManifest))),
+		"skopeo inspect --raw docker://" + dstDigestRef:                                                                      ok([]byte(gvmdManifest)),
+		"skopeo inspect docker://" + dstDigestRef:                                                                            ok([]byte(gvmdInspect)),
+		"skopeo copy --all --preserve-digests docker://gvmd@sha256:" + srcHex + " docker://" + dstFallbackRef:                ok(nil),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:23.0.0":                                               fail(errors.New("manifest unknown")),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:23.0.0": ok(nil),
+		"skopeo inspect --raw docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123":                                               fail(errors.New("manifest unknown")),
+		"skopeo copy --all --preserve-digests docker://" + dstDigestRef + " docker://ghcr.io/brennoo/gvm-mirror/gvmd:abc123": ok(nil),
+	})
+
+	var stdout, stderr bytes.Buffer
+	err := run(context.Background(), []string{
+		"-compose-file", compose,
+		"-lock-file", lockPath,
+		"-only", "gvmd",
+	}, runner, fixedNow, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("run: %v (stderr: %s)", err, stderr.String())
+	}
+
+	lock := readLock(t, lockPath)
+	if len(lock.Entries) != 2 {
+		t.Fatalf("lock.Entries = %+v, want both entries preserved in the lock file", lock.Entries)
+	}
+	byRepo := make(map[string]mirror.LockEntry, len(lock.Entries))
+	for _, e := range lock.Entries {
+		byRepo[e.SourceRepository] = e
+	}
+	if e := byRepo["gvmd"]; e.DestinationDigest == "" {
+		t.Errorf("gvmd entry = %+v, want it mirrored", e)
+	}
+	if e := byRepo["other"]; e.DestinationDigest != "" || e.SourceChannel != "other:latest" {
+		t.Errorf("other entry = %+v, want its seed entry preserved unchanged since -only excluded it", e)
+	}
+
+	composeData, err := os.ReadFile(compose)
+	if err != nil {
+		t.Fatalf("reading compose file: %v", err)
+	}
+	if !strings.Contains(string(composeData), "image: "+dstDigestRef) {
+		t.Errorf("compose = %q, want gvmd's line rewritten to its mirrored digest", composeData)
+	}
+	if !strings.Contains(string(composeData), "image: other:latest") {
+		t.Errorf("compose = %q, want other's line left pointing at its unmirrored upstream channel", composeData)
+	}
+}
+
 func TestRunNoOpKeepsLockFileByteIdentical(t *testing.T) {
 	dir := t.TempDir()
 	srcHex := digestHex([]byte(gvmdManifest))
