@@ -77,8 +77,21 @@ upstream provenance anomaly, not something to paper over.
 `image-mirror.lock.json` records, for every image: the upstream channel it was resolved from, the
 source and destination digests, resolved version/revision, tags, and platforms. It is both the
 audit trail and the seed the next run reads to know what to mirror. Changes to it land via PRs,
-never direct pushes — `.github/workflows/mirror-images.yml` runs weekly and, when the lock
-drifts, opens a PR that is auto-approved and merged once CI passes.
+never direct pushes, from two scheduled workflows that split the image list by how often it
+actually changes upstream:
+
+- `.github/workflows/mirror-images-feeds.yml` — the feed content images (`cert-bund-data`,
+  `data-objects`, `dfn-cert-data`, `notus-data`, `report-formats`, `scap-data`,
+  `vulnerability-tests`), which Greenbone rebuilds far more often than a weekly cadence can keep
+  up with. Runs every 6 hours.
+- `.github/workflows/mirror-images-software.yml` — the rest (`gpg-data`, `gsa`, `gvm-tools`,
+  `gvmd`, `openvas-scanner`, `ospd-openvas`, `pg-gvm`, `redis-server`), which only rebuild on a
+  release cadence. Runs weekly.
+
+Both write the same lock file and share a `concurrency` group keyed on the lock file (not on
+either workflow's name), so a run of one queues behind a run of the other instead of racing it.
+When the lock drifts, whichever workflow ran opens a PR that is auto-approved and merged once CI
+passes.
 
 ## Running it
 

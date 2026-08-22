@@ -35,6 +35,8 @@ func run(ctx context.Context, args []string, runner mirror.Runner, now func() ti
 		"comma-separated image names whose revision tag may move — for upstreams that rebuild an unchanged commit in place")
 	feedVersionTag := fs.String("feed-version-tag", "",
 		"comma-separated image names to additionally tag with their net.greenbone.feed.version label (which must then be present)")
+	only := fs.String("only", "",
+		"comma-separated image names (each lock entry's last path segment) to mirror this run; empty (the default) mirrors every image in the lock file. Lets two schedules of differing cadence share one lock file instead of splitting it")
 	rewriteComposeOnly := fs.Bool("rewrite-compose-only", false,
 		"rewrite -compose-file's pins from -lock-file and exit; no registry access, and -lock-file is not modified")
 	if err := fs.Parse(args); err != nil {
@@ -53,7 +55,7 @@ func run(ctx context.Context, args []string, runner mirror.Runner, now func() ti
 		revisionMovable: parseNameSet(*allowMoveRevision),
 		feedVersionTag:  parseNameSet(*feedVersionTag),
 	}
-	return runWithFlags(ctx, *composeFile, *lockFile, *destPrefix, *dryRun, parseNameSet(*allowMove), policies, runner, now, stdout, stderr)
+	return runWithFlags(ctx, *composeFile, *lockFile, *destPrefix, *dryRun, parseNameSet(*allowMove), parseNameSet(*only), policies, runner, now, stdout, stderr)
 }
 
 // tagPolicies are per-image tagging opt-ins, keyed by mirror.ImageName.
@@ -72,30 +74,51 @@ func parseNameSet(list string) map[string]bool {
 	return set
 }
 
+// validateNamesKnown fails closed on names naming an image not present in
+// known — a typo in a flag would otherwise silently disable it (a tag
+// policy) or silently mirror nothing under that name (-only).
+func validateNamesKnown(flagName string, names, known map[string]bool) error {
+	sorted := make([]string, 0, len(names))
+	for name := range names {
+		sorted = append(sorted, name)
+	}
+	sort.Strings(sorted)
+	for _, name := range sorted {
+		if !known[name] {
+			return fmt.Errorf("%s: image %q is not in the lock file", flagName, name)
+		}
+	}
+	return nil
+}
+
 // validatePolicyNames fails closed on a policy naming an image the lock file
 // does not contain — a typo would otherwise silently disable the policy.
 func validatePolicyNames(images []mirror.SourceImage, policies tagPolicies) error {
+	known := knownImageNames(images)
+	if err := validateNamesKnown("-allow-move-revision", policies.revisionMovable, known); err != nil {
+		return err
+	}
+	return validateNamesKnown("-feed-version-tag", policies.feedVersionTag, known)
+}
+
+func knownImageNames(images []mirror.SourceImage) map[string]bool {
 	known := make(map[string]bool, len(images))
 	for _, img := range images {
 		known[mirror.ImageName(img.Repository)] = true
 	}
-	check := func(flagName string, names map[string]bool) error {
-		sorted := make([]string, 0, len(names))
-		for name := range names {
-			sorted = append(sorted, name)
+	return known
+}
+
+// filterImages returns only the images named in only, preserving images'
+// original order. Callers must validate only against knownImageNames first.
+func filterImages(images []mirror.SourceImage, only map[string]bool) []mirror.SourceImage {
+	filtered := make([]mirror.SourceImage, 0, len(images))
+	for _, img := range images {
+		if only[mirror.ImageName(img.Repository)] {
+			filtered = append(filtered, img)
 		}
-		sort.Strings(sorted)
-		for _, name := range sorted {
-			if !known[name] {
-				return fmt.Errorf("%s: image %q is not in the lock file", flagName, name)
-			}
-		}
-		return nil
 	}
-	if err := check("-allow-move-revision", policies.revisionMovable); err != nil {
-		return err
-	}
-	return check("-feed-version-tag", policies.feedVersionTag)
+	return filtered
 }
 
 // rewriteComposeOnlyFromLock rewrites composeFile's pins from lockFile's
@@ -110,7 +133,7 @@ func rewriteComposeOnlyFromLock(lockFile, composeFile string) error {
 	return rewriteComposeFile(composeFile, rewritable)
 }
 
-func runWithFlags(ctx context.Context, composeFile, lockFile, destPrefix string, dryRun bool, movable map[string]bool, policies tagPolicies, runner mirror.Runner, now func() time.Time, stdout, stderr io.Writer) error {
+func runWithFlags(ctx context.Context, composeFile, lockFile, destPrefix string, dryRun bool, movable, only map[string]bool, policies tagPolicies, runner mirror.Runner, now func() time.Time, stdout, stderr io.Writer) error {
 	if !dryRun {
 		if err := checkSkopeoAvailable(); err != nil {
 			return err
@@ -121,14 +144,25 @@ func runWithFlags(ctx context.Context, composeFile, lockFile, destPrefix string,
 	if err != nil {
 		return fmt.Errorf("reading seed lock file %s (mirrorimages needs a prior run's lock file to know what to mirror): %w", lockFile, err)
 	}
-	images := mirror.SourceImagesFromLock(seedLock)
-	if err := validatePolicyNames(images, policies); err != nil {
+	allImages := mirror.SourceImagesFromLock(seedLock)
+	if err := validatePolicyNames(allImages, policies); err != nil {
+		return err
+	}
+	if err := validateNamesKnown("-only", only, knownImageNames(allImages)); err != nil {
 		return err
 	}
 
-	destinations, err := mirror.PlanDestinations(destPrefix, images)
+	// Destinations are planned (and collisions caught) across every image the
+	// lock file knows about, not just this run's -only subset — the
+	// invariant holds fleet-wide regardless of which images this run refreshes.
+	destinations, err := mirror.PlanDestinations(destPrefix, allImages)
 	if err != nil {
 		return err
+	}
+
+	images := allImages
+	if len(only) > 0 {
+		images = filterImages(allImages, only)
 	}
 
 	// A source that fails this run keeps its seed entry rather than vanishing
