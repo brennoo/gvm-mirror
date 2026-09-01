@@ -134,21 +134,21 @@
     {
       "source_repository": "registry.community.greenbone.net/community/notus-data",
       "source_channel": "registry.community.greenbone.net/community/notus-data",
-      "source_digest": "registry.community.greenbone.net/community/notus-data@sha256:b7781ccceb70180719d4025bb5830b6ff80e9c2a2ab9b411b899772f5b1bd75a",
+      "source_digest": "registry.community.greenbone.net/community/notus-data@sha256:0709a2f18f3a10e476426fda302a37bb6c22e10a4d68689c55f4aa5c3fae9c91",
       "destination_repository": "ghcr.io/brennoo/gvm-mirror/notus-data",
-      "destination_digest": "ghcr.io/brennoo/gvm-mirror/notus-data@sha256:b7781ccceb70180719d4025bb5830b6ff80e9c2a2ab9b411b899772f5b1bd75a",
+      "destination_digest": "ghcr.io/brennoo/gvm-mirror/notus-data@sha256:0709a2f18f3a10e476426fda302a37bb6c22e10a4d68689c55f4aa5c3fae9c91",
       "version": "nightly",
-      "revision": "fecc5df84ce88008a2f3457b2d47136d6d339d55",
+      "revision": "20dacf9539a6dadfa4c1e4dc560f737b9ad95bee",
       "tags": [
-        "sha256-b7781ccceb70180719d4025bb5830b6ff80e9c2a2ab9b411b899772f5b1bd75a",
+        "sha256-0709a2f18f3a10e476426fda302a37bb6c22e10a4d68689c55f4aa5c3fae9c91",
         "nightly",
-        "fecc5df84ce88008a2f3457b2d47136d6d339d55"
+        "20dacf9539a6dadfa4c1e4dc560f737b9ad95bee"
       ],
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-31T05:47:49.589959398Z"
+      "captured_at": "2026-09-01T11:47:54.107157173Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/openvas-scanner",
@@ -244,40 +244,40 @@
     {
       "source_repository": "registry.community.greenbone.net/community/scap-data",
       "source_channel": "registry.community.greenbone.net/community/scap-data",
-      "source_digest": "registry.community.greenbone.net/community/scap-data@sha256:f8f7062cab065ce9db00afa23e69ebfe7845c4f9895cad377a3d4aa5a6d60a59",
+      "source_digest": "registry.community.greenbone.net/community/scap-data@sha256:f6b1b834d7f792ddb637794fec4d0bab5f7f3b9042e4df83141149882e26a16a",
       "destination_repository": "ghcr.io/brennoo/gvm-mirror/scap-data",
-      "destination_digest": "ghcr.io/brennoo/gvm-mirror/scap-data@sha256:f8f7062cab065ce9db00afa23e69ebfe7845c4f9895cad377a3d4aa5a6d60a59",
+      "destination_digest": "ghcr.io/brennoo/gvm-mirror/scap-data@sha256:f6b1b834d7f792ddb637794fec4d0bab5f7f3b9042e4df83141149882e26a16a",
       "version": "main",
-      "revision": "d7c27b2a4948500bb9a1e36d12d82f5183e171fe",
+      "revision": "bb68e918e76b3af41c3943b94a070c91042af022",
       "tags": [
-        "sha256-f8f7062cab065ce9db00afa23e69ebfe7845c4f9895cad377a3d4aa5a6d60a59",
+        "sha256-f6b1b834d7f792ddb637794fec4d0bab5f7f3b9042e4df83141149882e26a16a",
         "main",
-        "d7c27b2a4948500bb9a1e36d12d82f5183e171fe"
+        "bb68e918e76b3af41c3943b94a070c91042af022"
       ],
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-31T05:48:46.178722795Z"
+      "captured_at": "2026-09-01T11:51:39.037010443Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/vulnerability-tests",
       "source_channel": "registry.community.greenbone.net/community/vulnerability-tests",
-      "source_digest": "registry.community.greenbone.net/community/vulnerability-tests@sha256:aebccb2d2108c40121b441a9c63034cc5141bdcbe90cc4c7bf04e6740d1579ab",
+      "source_digest": "registry.community.greenbone.net/community/vulnerability-tests@sha256:75fbfae2a83b2c29c0178581a99a7f5de8d9dc720b48c224c8deb870694eb787",
       "destination_repository": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests",
-      "destination_digest": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests@sha256:aebccb2d2108c40121b441a9c63034cc5141bdcbe90cc4c7bf04e6740d1579ab",
+      "destination_digest": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests@sha256:75fbfae2a83b2c29c0178581a99a7f5de8d9dc720b48c224c8deb870694eb787",
       "version": "nightly",
-      "revision": "f163cd4beb572a4faf94b40af43145035296cf0f",
+      "revision": "540dec6b033d925c3e805c6fb997b458d41c864c",
       "tags": [
-        "sha256-aebccb2d2108c40121b441a9c63034cc5141bdcbe90cc4c7bf04e6740d1579ab",
+        "sha256-75fbfae2a83b2c29c0178581a99a7f5de8d9dc720b48c224c8deb870694eb787",
         "nightly",
-        "f163cd4beb572a4faf94b40af43145035296cf0f"
+        "540dec6b033d925c3e805c6fb997b458d41c864c"
       ],
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-08-31T14:05:51.602348512Z"
+      "captured_at": "2026-09-01T11:59:08.369445617Z"
     }
   ]
 }
