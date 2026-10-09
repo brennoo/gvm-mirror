@@ -1,0 +1,21 @@
+.github/workflows/mirror-images-software.yml
+  s_960844b7ba697f::t_f67cb44ef47526 4,13
+.github/workflows/mirror-images-feeds.yml
+  s_960844b7ba697f::t_1f3ca693df9b64 5-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "742699e5cbd419739652a9882188c1722a920cd3",
+  "prompts": {},
+  "sessions": {
+    "s_960844b7ba697f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3d95b891-00e3-41d1-b825-de08c7aa4b34",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Brenno Oliveira <brenno.oliveira@deliveryhero.com>"
+    }
+  }
+}
