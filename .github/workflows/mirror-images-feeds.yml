@@ -2,8 +2,8 @@ name: Mirror feed images
 
 # The feed content images (NVT/SCAP/CERT/Notus data, scan configs, report
 # formats) rebuild upstream far more often than the software images do — a
-# weekly cadence is too coarse for them. This workflow only touches that
-# subset; mirror-images-software.yml covers the rest on a weekly cadence.
+# daily cadence is too coarse for them. This workflow only touches that
+# subset; mirror-images-software.yml covers the rest on a daily cadence.
 #
 # GitHub disables `schedule:` triggers after 60 days of no repository
 # activity — a quiet period silently stops this job and nothing notifies

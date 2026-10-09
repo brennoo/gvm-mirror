@@ -1,7 +1,7 @@
 name: Mirror software images
 
 # gvmd/gsa/scanner/tooling images rebuild on a release cadence, not a feed
-# cadence — weekly is plenty for this subset. mirror-images-feeds.yml covers
+# cadence — daily is plenty for this subset. mirror-images-feeds.yml covers
 # the faster-moving feed content images every 6 hours instead.
 #
 # GitHub disables `schedule:` triggers after 60 days of no repository
@@ -10,7 +10,7 @@ name: Mirror software images
 # hand regardless of whether the schedule is currently alive.
 on:
   schedule:
-    - cron: '17 4 * * 1'
+    - cron: '7 10 * * *'
   workflow_dispatch:
 
 permissions:
