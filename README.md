@@ -61,8 +61,8 @@ Each mirrored image gets up to four kinds of tags:
   Write-once, except when the label is a channel alias (`nightly`, `main`, `latest`), which
   tracks the channel and moves with it.
 - **Revision** — from the `org.opencontainers.image.revision` label: the git commit the image
-  was built from. Write-once, except for `data-objects` and `report-formats`, whose upstreams
-  rebuild the same commit in place; their revision tag follows the latest rebuild.
+  was built from. Write-once, except for `data-objects`, `gpg-data`, and `report-formats`, whose
+  upstreams rebuild the same commit in place; their revision tag follows the latest rebuild.
 - **Feed version** — `data-objects` only: its `net.greenbone.feed.version` label (e.g.
   `202608210512-enterprise`), the per-build feed version its moving revision no longer pins.
 
