@@ -115,21 +115,21 @@
     {
       "source_repository": "registry.community.greenbone.net/community/gvmd",
       "source_channel": "registry.community.greenbone.net/community/gvmd:stable",
-      "source_digest": "registry.community.greenbone.net/community/gvmd@sha256:fec601848e0847b27d7bb262b684a05747d369b85ddde75f7074fd2880f06221",
+      "source_digest": "registry.community.greenbone.net/community/gvmd@sha256:94f00ed57c93163756f5c84bd79db5e3de96706be8c051ae201e5c35ffddcfd3",
       "destination_repository": "ghcr.io/brennoo/gvm-mirror/gvmd",
-      "destination_digest": "ghcr.io/brennoo/gvm-mirror/gvmd@sha256:fec601848e0847b27d7bb262b684a05747d369b85ddde75f7074fd2880f06221",
-      "version": "v26.40.2",
-      "revision": "99503647e445c799b65483817d5cd87bbbf004b4",
+      "destination_digest": "ghcr.io/brennoo/gvm-mirror/gvmd@sha256:94f00ed57c93163756f5c84bd79db5e3de96706be8c051ae201e5c35ffddcfd3",
+      "version": "v26.41.0",
+      "revision": "02a0516528022338e29efda8e75c548d86d126fb",
       "tags": [
-        "sha256-fec601848e0847b27d7bb262b684a05747d369b85ddde75f7074fd2880f06221",
-        "v26.40.2",
-        "99503647e445c799b65483817d5cd87bbbf004b4"
+        "sha256-94f00ed57c93163756f5c84bd79db5e3de96706be8c051ae201e5c35ffddcfd3",
+        "v26.41.0",
+        "02a0516528022338e29efda8e75c548d86d126fb"
       ],
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-10-05T11:37:43.233441267Z"
+      "captured_at": "2026-10-12T19:46:05.974461931Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/notus-data",
