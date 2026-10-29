@@ -244,40 +244,40 @@
     {
       "source_repository": "registry.community.greenbone.net/community/scap-data",
       "source_channel": "registry.community.greenbone.net/community/scap-data",
-      "source_digest": "registry.community.greenbone.net/community/scap-data@sha256:58fbfbecb568e7fdf826bc0bfa474d6f864feb492502a2134fe9bd9c2f84af27",
+      "source_digest": "registry.community.greenbone.net/community/scap-data@sha256:247e9e3c403e7e8abb6f2400ba0ae8d6433a118f5dd1d9bbcd5f8d22d1f23481",
       "destination_repository": "ghcr.io/brennoo/gvm-mirror/scap-data",
-      "destination_digest": "ghcr.io/brennoo/gvm-mirror/scap-data@sha256:58fbfbecb568e7fdf826bc0bfa474d6f864feb492502a2134fe9bd9c2f84af27",
+      "destination_digest": "ghcr.io/brennoo/gvm-mirror/scap-data@sha256:247e9e3c403e7e8abb6f2400ba0ae8d6433a118f5dd1d9bbcd5f8d22d1f23481",
       "version": "main",
-      "revision": "ddcc4f1a04d404d248fb9d932ef6565971c21437",
+      "revision": "1ae43621aff039b628ca27a52fb246caf97b83d5",
       "tags": [
-        "sha256-58fbfbecb568e7fdf826bc0bfa474d6f864feb492502a2134fe9bd9c2f84af27",
+        "sha256-247e9e3c403e7e8abb6f2400ba0ae8d6433a118f5dd1d9bbcd5f8d22d1f23481",
         "main",
-        "ddcc4f1a04d404d248fb9d932ef6565971c21437"
+        "1ae43621aff039b628ca27a52fb246caf97b83d5"
       ],
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-10-28T13:13:34.415413172Z"
+      "captured_at": "2026-10-29T13:19:41.588809462Z"
     },
     {
       "source_repository": "registry.community.greenbone.net/community/vulnerability-tests",
       "source_channel": "registry.community.greenbone.net/community/vulnerability-tests",
-      "source_digest": "registry.community.greenbone.net/community/vulnerability-tests@sha256:0b51de368ec362e8eb3848c0b0e96898977b9dc39adf44fe20c8c98f82ec0ab5",
+      "source_digest": "registry.community.greenbone.net/community/vulnerability-tests@sha256:7313ef4ebe7a876efa3a2c5e29b5deb9000cee55d16d3ff78abd7ed7122711ad",
       "destination_repository": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests",
-      "destination_digest": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests@sha256:0b51de368ec362e8eb3848c0b0e96898977b9dc39adf44fe20c8c98f82ec0ab5",
+      "destination_digest": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests@sha256:7313ef4ebe7a876efa3a2c5e29b5deb9000cee55d16d3ff78abd7ed7122711ad",
       "version": "nightly",
-      "revision": "5a03bd3a95ea98feee8eed217e32a3ef1ab46fc4",
+      "revision": "000d603f6453230c880edb00504fd269fc7f8e1f",
       "tags": [
-        "sha256-0b51de368ec362e8eb3848c0b0e96898977b9dc39adf44fe20c8c98f82ec0ab5",
+        "sha256-7313ef4ebe7a876efa3a2c5e29b5deb9000cee55d16d3ff78abd7ed7122711ad",
         "nightly",
-        "5a03bd3a95ea98feee8eed217e32a3ef1ab46fc4"
+        "000d603f6453230c880edb00504fd269fc7f8e1f"
       ],
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-10-28T13:16:57.32499632Z"
+      "captured_at": "2026-10-29T13:23:10.45227318Z"
     }
   ]
 }
