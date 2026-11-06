@@ -263,21 +263,21 @@
     {
       "source_repository": "registry.community.greenbone.net/community/vulnerability-tests",
       "source_channel": "registry.community.greenbone.net/community/vulnerability-tests",
-      "source_digest": "registry.community.greenbone.net/community/vulnerability-tests@sha256:3a3cf9affb94ee3d714d3da7ebc35bf52bb0f1f32e5d196e82d2c3bf06b2b126",
+      "source_digest": "registry.community.greenbone.net/community/vulnerability-tests@sha256:26400954f90886c2d492a2ea6f90f2640fc4e811ea9f8dc588e212bbb502f2e3",
       "destination_repository": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests",
-      "destination_digest": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests@sha256:3a3cf9affb94ee3d714d3da7ebc35bf52bb0f1f32e5d196e82d2c3bf06b2b126",
+      "destination_digest": "ghcr.io/brennoo/gvm-mirror/vulnerability-tests@sha256:26400954f90886c2d492a2ea6f90f2640fc4e811ea9f8dc588e212bbb502f2e3",
       "version": "nightly",
-      "revision": "a2e53c2e30f1fa5408369cb5cf99653a3e08e9df",
+      "revision": "fcb506cf9d1e21e947624bbb765143ab8fbe259a",
       "tags": [
-        "sha256-3a3cf9affb94ee3d714d3da7ebc35bf52bb0f1f32e5d196e82d2c3bf06b2b126",
+        "sha256-26400954f90886c2d492a2ea6f90f2640fc4e811ea9f8dc588e212bbb502f2e3",
         "nightly",
-        "a2e53c2e30f1fa5408369cb5cf99653a3e08e9df"
+        "fcb506cf9d1e21e947624bbb765143ab8fbe259a"
       ],
       "platforms": [
         "linux/amd64",
         "linux/arm64"
       ],
-      "captured_at": "2026-11-06T07:23:05.643800299Z"
+      "captured_at": "2026-11-06T19:32:53.037963233Z"
     }
   ]
 }
